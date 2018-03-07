@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>SF Muni Transport</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            padding: 0 20px;
+            background:  #eee;
+        }
+        svg {
+            background: #a0c2ff;
+            padding: 20px;
+        }
+        g path {
+            stroke: black;
+            fill: white;
+            stroke-width: 1px;
+            stroke-linejoin: round;
+        }
+        .streets {
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+    <h2>SF Muni Map</h2>
+    <svg width="760" height="600"></svg>
+    <script src="http://d3js.org/d3.v5.min.js"></script>
+
+    <script>
+
+        //const mapTypes = ['arteries.json', 'freeways.json', 'neighborhoods.json', 'streets.json'];
+        const mapTypes = ['neighborhoods', 'streets'];
+        const width = 760;
+        const height = 600;
+
+        const svg = d3.select("svg")
+            .attr('width', width)
+            .attr('height', height);
+
+        mapTypes.forEach((mapType) => {
+            d3.json('geo/' + mapType + '.json').then((geoJson) => {
+                renderMapLayer(geoJson, mapType);
+            });
+        });
+
+        function renderMapLayer (geoJson, mapType) {
+            const g = svg.append('g').attr('class', mapType);
+            const projection = d3.geoMercator().fitSize([width, height], geoJson);
+            const path = d3.geoPath().projection(projection);
+
+            g.selectAll('path')
+              .data(geoJson.features)
+              .enter()
+              .append('path')
+              .attr('d', path);
+
+        }
+
+    </script>
+</body>
+</html>
