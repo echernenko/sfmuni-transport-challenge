@@ -3,30 +3,33 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
+    <link rel="shortcut icon" href="">
     <title>SF Muni Transport</title>
     <style>
         body {
             font-family: Arial, Helvetica, sans-serif;
             padding: 0 20px;
-            background:  #eee;
+            background: #aadbff;
+        }
+        h2 {
+            font-weight: 500;
         }
         svg {
-            background: #a0c2ff;
             padding: 20px;
         }
         g path {
-            stroke: black;
-            fill: white;
+            stroke: #7d8da5;
+            fill: #e8e8e8;
             stroke-width: 1px;
             stroke-linejoin: round;
         }
         .streets {
-            opacity: 0.6;
+            opacity: 0.7;
         }
     </style>
 </head>
 <body>
-    <h2>SF Muni Map</h2>
+    <h2>San Francisco Muni Transport Map</h2>
     <svg width="760" height="600"></svg>
     <script src="http://d3js.org/d3.v5.min.js"></script>
 
@@ -42,9 +45,26 @@
             .attr('height', height);
 
         mapTypes.forEach((mapType) => {
-            d3.json('geo/' + mapType + '.json').then((geoJson) => {
+
+            const getGeoMap = new Promise(function(resolve, reject) {
+                let geoJson = JSON.parse(localStorage.getItem(mapType));
+                if(geoJson) {
+                    resolve(geoJson);
+                } else {
+                     d3.json('geo/' + mapType + '.json').then((geoJson) => {
+                        // streets is too big for caching
+                        if (mapType !== 'streets') {
+                            localStorage.setItem(mapType, JSON.stringify(geoJson));
+                        }
+                        resolve(geoJson);
+                     });
+                }
+            });
+
+            getGeoMap.then(function(geoJson) {
                 renderMapLayer(geoJson, mapType);
             });
+
         });
 
         function renderMapLayer (geoJson, mapType) {
