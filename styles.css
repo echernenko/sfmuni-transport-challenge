@@ -1,0 +1,25 @@
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    padding: 0 20px;
+    background: #aadbff;
+}
+h2 {
+    font-weight: 500;
+}
+svg {
+    position: relative;
+    top: -35px;
+    z-index: -1;
+}
+g path {
+    stroke: #7d8da5;
+    fill: #e8e8e8;
+    stroke-width: 1px;
+    stroke-linejoin: round;
+}
+.vehicles path {
+    fill: #fbc02e;
+}
+.streets {
+    opacity: 0.7;
+}

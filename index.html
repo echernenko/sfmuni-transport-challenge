@@ -3,83 +3,19 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
-    <link rel="shortcut icon" href="">
     <title>SF Muni Transport</title>
-    <style>
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            padding: 0 20px;
-            background: #aadbff;
-        }
-        h2 {
-            font-weight: 500;
-        }
-        svg {
-            padding: 20px;
-        }
-        g path {
-            stroke: #7d8da5;
-            fill: #e8e8e8;
-            stroke-width: 1px;
-            stroke-linejoin: round;
-        }
-        .streets {
-            opacity: 0.7;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="styles.css">
 </head>
 <body>
     <h2>San Francisco Muni Transport Map</h2>
-    <svg width="760" height="600"></svg>
+    <div class="route-selector">
+        <label for="route">Select a route to watch:</label>
+        <select id="route">
+            <option value="">all</option>
+        </select>
+    </div>
+    <svg width="750" height="700"></svg>
     <script src="http://d3js.org/d3.v5.min.js"></script>
-
-    <script>
-
-        //const mapTypes = ['arteries.json', 'freeways.json', 'neighborhoods.json', 'streets.json'];
-        const mapTypes = ['neighborhoods', 'streets'];
-        const width = 760;
-        const height = 600;
-
-        const svg = d3.select("svg")
-            .attr('width', width)
-            .attr('height', height);
-
-        mapTypes.forEach((mapType) => {
-
-            const getGeoMap = new Promise(function(resolve, reject) {
-                let geoJson = JSON.parse(localStorage.getItem(mapType));
-                if(geoJson) {
-                    resolve(geoJson);
-                } else {
-                     d3.json('geo/' + mapType + '.json').then((geoJson) => {
-                        // streets is too big for caching
-                        if (mapType !== 'streets') {
-                            localStorage.setItem(mapType, JSON.stringify(geoJson));
-                        }
-                        resolve(geoJson);
-                     });
-                }
-            });
-
-            getGeoMap.then(function(geoJson) {
-                renderMapLayer(geoJson, mapType);
-            });
-
-        });
-
-        function renderMapLayer (geoJson, mapType) {
-            const g = svg.append('g').attr('class', mapType);
-            const projection = d3.geoMercator().fitSize([width, height], geoJson);
-            const path = d3.geoPath().projection(projection);
-
-            g.selectAll('path')
-              .data(geoJson.features)
-              .enter()
-              .append('path')
-              .attr('d', path);
-
-        }
-
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
