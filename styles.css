@@ -17,13 +17,17 @@ g path {
     stroke-width: 1px;
     stroke-linejoin: round;
 }
-.streets path {
+.streets {
+    opacity: 0.7;
     /* to not be on top of vehicles */
+    position: relative;
     z-index: -1;
+}
+.vehicles {
+     /* to be ontop of other layers */
+    position: relative;
+    z-index: 10;
 }
 .vehicles path {
     fill: #fbc02e;
-}
-.streets {
-    opacity: 0.7;
 }
