@@ -1,10 +1,12 @@
 ;(() => {
 
-    const mapTypes = ['neighborhoods', 'streets'];
+    const mapTypes = ['neighborhoods','arteries','freeways','streets'];
     const mapScaleType = mapTypes[0];
+    const mapVehiclesMandatory = mapTypes[2];
     const vehiclesLayerCssClass = 'vehicles';
     const vehiclesLocationFetchURL = 'http://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=sf-muni';
-    const updateFrequencyMs = 3000;
+    // TODO: change it to 15000 according to the spec
+    const updateFrequencyMs = 10000;
     const renderWidth = 750;
     const renderHeight = 700;
     const routeSelectEl = document.getElementById('route');
@@ -14,6 +16,8 @@
     let mapProjection, mapPath;
     // calculated once transport routes
     let transportRoutes = [];
+    let countSuccessMapLayersRendered = 0;
+    let countFailedVehicleFetches = 0;
 
     const svg = d3.select("svg")
         .attr('width', renderWidth)
@@ -26,23 +30,28 @@
             if(geoJson) {
                 resolve(geoJson);
             } else {
-                 d3.json('geo/' + mapType + '.json').then((geoJson) => {
-                    // Caching every map except for "streets".
-                    // It is too big for caching (~10MB)
-                    // TODO: when having BE with the website
-                    // calculate map sizes in advance
-                    // TODO: implement main geometry chunks
-                    // for initial load of the map and caching
-                    if (mapType !== 'streets') {
-                        localStorage.setItem(mapType, JSON.stringify(geoJson));
-                    }
-                    // holding map scale geoJson for calibrating
-                    // the svg
-                    if (mapType === mapScaleType) {
-                        mapScaleGeoJson = geoJson;
-                    }
-                    resolve(geoJson);
-                 });
+                 d3.json('geo/' + mapType + '.json')
+                    .then((geoJson) => {
+                        // Caching every map except for "streets".
+                        // It is too big for caching (~10MB)
+                        // TODO: when having BE with the website
+                        // calculate map sizes in advance
+                        // TODO: implement main geometry chunks
+                        // for initial load of the map and caching
+                        if (mapType !== 'streets') {
+                            localStorage.setItem(mapType, JSON.stringify(geoJson));
+                        }
+                        // holding map scale geoJson for calibrating
+                        // the svg
+                        if (mapType === mapScaleType) {
+                            mapScaleGeoJson = geoJson;
+                        }
+                        resolve(geoJson);
+                    })
+                    // processing failure in json request
+                    .catch(() => {
+                        reject(geoJson);
+                    });
             }
         });
 
@@ -55,22 +64,45 @@
                 mapScaleGeoJson = geoJson;
             }
             renderMapLayer(geoJson, mapType);
+            if (mapType === mapVehiclesMandatory) {
+                renderVehicles();
+            }
+        }).catch(() => {
+            // we are rendering vehicles even if some
+            // .json has failed.
+            // Though we need at least one to succeed.
+            // But never make hard dependency on large
+            // streets.json (this is configurable)
+            if (mapType === mapVehiclesMandatory && countSuccessMapLayersRendered) {
+                renderVehicles();
+            }
         });
 
     });
 
-    // fetching vehicles locations
-    // TODO: prevent long fetch ajax request race
-    // condition
-    setInterval(() => {
-        d3.json(vehiclesLocationFetchURL + (routeSelectEl.value ? ('&r='+routeSelectEl.value) : '')).then((json) => {
-            const vehiclesLayer = document.getElementsByClassName(vehiclesLayerCssClass)[0];
-            if (vehiclesLayer) {
-                vehiclesLayer.parentNode.removeChild(vehiclesLayer);
-            }
-            renderMapLayer (jsonToGeoJson(json), vehiclesLayerCssClass);
-        });
-    }, updateFrequencyMs);
+    /**
+      * Fetching vehicle locations and rendering
+      * them at the streets map
+      */
+    function renderVehicles() {
+        d3.json(vehiclesLocationFetchURL + (routeSelectEl.value ? ('&r='+routeSelectEl.value) : ''))
+            .then((json) => {
+                const vehiclesLayer = document.getElementsByClassName(vehiclesLayerCssClass)[0];
+                if (vehiclesLayer) {
+                    vehiclesLayer.parentNode.removeChild(vehiclesLayer);
+                }
+                renderMapLayer (jsonToGeoJson(json), vehiclesLayerCssClass);
+                // long-polling after last rendered result
+                countFailedVehicleFetches = 0;
+                setTimeout(renderVehicles, updateFrequencyMs);
+            })
+            .catch(() => {
+                // long-polling after last failed result
+                countFailedVehicleFetches++;
+                // increasing fetch wait time to prevent endpoint DDOS and banning
+                setTimeout(renderVehicles, updateFrequencyMs * countFailedVehicleFetches);
+            })
+    }
 
     /**
       * Common point for rendering
@@ -94,6 +126,11 @@
           .enter()
           .append('path')
           .attr('d', mapPath);
+
+        // indicating, that layer is rendered
+        // (at least one is required to show vehicle locations)
+        countSuccessMapLayersRendered++;
+
     }
 
     /**

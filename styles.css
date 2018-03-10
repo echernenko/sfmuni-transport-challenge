@@ -17,6 +17,10 @@ g path {
     stroke-width: 1px;
     stroke-linejoin: round;
 }
+.streets path {
+    /* to not be on top of vehicles */
+    z-index: -1;
+}
 .vehicles path {
     fill: #fbc02e;
 }
