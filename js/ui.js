@@ -1,7 +1,7 @@
 /**
-  * UI module
-  * Responsible for rendering map layers and responding to user interactions
-  */
+ * UI module
+ * Responsible for rendering map layers and responding to user interactions
+ */
 
 import {mapWidth, mapHeight, mapLayerVehicles} from './config.js';
 import {fetchVehicles} from './transport.js';
@@ -16,8 +16,10 @@ const svgEl = svg.node();
 let mapProjection, mapPath, mapScaleGeoJson;
 
 /**
-  * Common point for rendering a map layer
-  */
+ * Common point for rendering a map layer
+ * @param {json} geoJson A json, that represents map layer
+ * @param {string} mapLayer A map layer name
+ */
 function renderMapLayer (geoJson, mapLayer) {
 
     // calculating once svg map scale
@@ -61,9 +63,10 @@ function renderMapLayer (geoJson, mapLayer) {
 }
 
 /**
-  * Rendering transport route options in dropdown of the page
-  * TODO: move to React
-  */
+ * Rendering transport route options in dropdown of the page
+ * TODO: move to React
+ * @param {array} routes A list of vehicle routes
+ */
 function reflectTransportRoutesInUI (routes) {
     Object.keys(routes).forEach(function (routeId) {
         const opt = document.createElement('option');

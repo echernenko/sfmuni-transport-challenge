@@ -1,9 +1,9 @@
 /**
-  * Transport module
-  * It is responsible for fetch of the map layers and vehicle locations on the
-  * map. Passes information to ui.js module for rendering and is feeded by some
-  * configuration from config.js. Implements localStorage caching if available.
-  */
+ * Transport module
+ * It is responsible for fetch of the map layers and vehicle locations on the
+ * map. Passes information to ui.js module for rendering and is feeded by some
+ * configuration from config.js. Implements localStorage caching if available.
+ */
 
 import {
     mapLayers,
@@ -29,8 +29,8 @@ let retrySetTimeout;
 let mapScaleIsSet = false;
 
 /**
-  * Fetching all map layers + transportation on top
-  */
+ * Fetching all map layers + transportation on top
+ */
 export function fetchAllMaps() {
     mapLayers.forEach((mapLayer) => {
         fetchMapLayer(mapLayer);
@@ -38,9 +38,10 @@ export function fetchAllMaps() {
 }
 
 /**
-  * Fetching map layer
-  * Trying first to get map layer from localstorage, if failed - via ajax call
-  */
+ * Fetching map layer
+ * Trying first to get map layer from localstorage, if failed - via ajax call
+ * @param {string} mapLayer A map layer name
+ */
 function fetchMapLayer(mapLayer) {
 
     // if it's vehicles layer - separate pipeline
@@ -89,8 +90,8 @@ function fetchMapLayer(mapLayer) {
 }
 
 /**
-  * Facilitates passing of loaded simultaneously map layers data into UI
-  */
+ * Facilitates passing of loaded simultaneously map layers data into UI
+ */
 function processMapLayersQueue(){
     const layers = Object.keys(mapsData);
     const layersLength = layers.length;
@@ -118,9 +119,10 @@ function processMapLayersQueue(){
 }
 
 /**
-  * Fetching vehicle locations and rendering
-  * them at the streets map
-  */
+ * Fetching vehicle locations and rendering
+ * them at the streets map
+ * @param {string} routeTag A vehicle route tag (code)
+ */
 export function fetchVehicles(routeTag) {
     // in case someone interacted with UI
     // otherwise - no harm
@@ -150,8 +152,9 @@ export function fetchVehicles(routeTag) {
 }
 
 /**
-  * JSON to geoJSON converter
-  */
+ * JSON to geoJSON converter
+ * @param {json} json A json, that represents map
+ */
 function jsonToGeoJson (json) {
     const geoJson = {
         "type": "FeatureCollection",

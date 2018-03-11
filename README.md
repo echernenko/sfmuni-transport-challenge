@@ -19,12 +19,12 @@ run code in modern browser.
 
 ----------
 Backlog:
-- production quality code (document functions params, run through linter,
-  localstorage fallback)
+- production quality code (run through linter)
 - use this endpoint for fetching route names:
   http://webservices.nextbus.com/service/publicJSONFeed?command=routeList&a=sf-muni
-- create constants module with most used configuration vars
 - make different route buses different color; draw legend in sidebar; animate points moving from A to B;
 - port FE to React (re-hydrate) - basically only routeTag selection control
 
 - reflect routeTag in URL with history API (and thus save on refresh)?
+- implement offline functionality (as it's possible to fetch predictions of the
+  vehicles location at given time)

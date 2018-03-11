@@ -1,6 +1,6 @@
 /**
-  * Configuration options of the application
-  */
+ * Configuration options of the application
+ */
 
 const mapWidth = 750;
 const mapHeight = 700;
