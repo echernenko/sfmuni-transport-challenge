@@ -4,20 +4,27 @@ Demo: http://sfmuni.echernenko.com/
 
 Or copy the folder to any folder of exisiting website
 
-Or go to the folder with project on your Mac and start
-webserver by execute the next command:
+Or go to the folder with project on your Mac and start webserver by executing
+the next command:
 `python -m SimpleHTTPServer 8000`
 
 No backend is used.
-Frontend is written in HTML, CSS and Javascript, that
-uses ES6 modules, Promises and some other features.
+Frontend is written in HTML, CSS and Javascript, that uses ES6 modules, Promises,
+localstorage and some other features.
+
+Assumptions:
+I do not use bundler (like Webpack) for the sake of easy portability and literally
+running code from any path, but with still preserving modern ES6 syntax. So please
+run code in modern browser.
 
 ----------
 Backlog:
-- check if I missed something according to the desc
-  of Ovidiu
-- document functions params
-- run through linter
-- port FE to React (re-hydrate)
+- production quality code (document functions params, run through linter,
+  localstorage fallback)
+- use this endpoint for fetching route names:
+  http://webservices.nextbus.com/service/publicJSONFeed?command=routeList&a=sf-muni
+- create constants module with most used configuration vars
+- make different route buses different color; draw legend in sidebar; animate points moving from A to B;
+- port FE to React (re-hydrate) - basically only routeTag selection control
 
 - reflect routeTag in URL with history API (and thus save on refresh)?

@@ -1,4 +1,4 @@
-import {routeSelectEl, vehiclesLayerCssClass, setMapScaleGeoJson, renderMapLayer, reflectTransportRoutesInUI} from './ui.js';
+import {vehiclesLayerCssClass, setMapScaleGeoJson, renderMapLayer, reflectTransportRoutesInUI} from './ui.js';
 
 const vehiclesLocationFetchURL = 'http://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=sf-muni';
 // TODO: change it to 15000 according to the spec
