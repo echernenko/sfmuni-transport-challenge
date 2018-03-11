@@ -130,7 +130,7 @@ function processMapLayersQueue() {
   // no layers - exiting
   if (!layersLength) { return; }
   // scale is not set and missing in queue
-  if (!mapScaleIsSet && layers.indexOf(mapLayerScale) !== -1) { return; }
+  if (!mapScaleIsSet && layers.indexOf(mapLayerScale) === -1) { return; }
 
   // map scale must be set first
   if (mapScaleIsSet) {

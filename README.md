@@ -19,7 +19,6 @@ run code in modern browser.
 
 ----------
 Backlog:
-- production quality code (run through linter)
 - use this endpoint for fetching route names:
   http://webservices.nextbus.com/service/publicJSONFeed?command=routeList&a=sf-muni
 - make different route buses different color; draw legend in sidebar; animate points moving from A to B;
