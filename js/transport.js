@@ -1,87 +1,120 @@
-import {vehiclesLayerCssClass, setMapScaleGeoJson, renderMapLayer, reflectTransportRoutesInUI} from './ui.js';
+/**
+  * Transport module
+  * It is responsible for fetch of the map layers and vehicle locations on the
+  * map. Passes information to ui.js module for rendering and is feeded by some
+  * configuration from config.js. Implements localStorage caching if available.
+  */
 
-const vehiclesLocationFetchURL = 'http://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=sf-muni';
-// TODO: change it to 15000 according to the spec
-const updateFrequencyMs = 10000;
-// calculated only once transport routes
-let transportRoutes = {};
-// transport route below goes on north
-// west and the road is not in .json
-// TODO: find a good .json instead of hiding
-const transportRouteDrop = '76X';
+import {
+    mapLayers,
+    mapLayerVehicles,
+    mapLayerScale,
+    vehiclesLocationFetchURL,
+    vehicleRouteDrop
+} from './config.js';
+import {
+    renderMapLayer,
+    reflectTransportRoutesInUI
+} from './ui.js';
+
+const updateFrequencyMs = 15000;
+// one time calculated transport routes
+const transportRoutes = {};
+const mapsData = {};
 // used for increasing re-try time
 let countFailedVehicleFetches = 0;
-// re-try setTimeout
+// re-try setTimeout id
 let retrySetTimeout;
 // svg scale is set
 let mapScaleIsSet = false;
 
 /**
-  * Fetching all map layers +
-  * transportation on top
+  * Fetching all map layers + transportation on top
   */
-export function fetchAllMaps(mapTypes, mapTriggerToFetchVehicles) {
-    mapTypes.forEach((mapType) => {
-        const loadVehicles = (mapType === mapTriggerToFetchVehicles) ? true : false;
-        fetchMapLayer(mapType, loadVehicles);
+export function fetchAllMaps() {
+    mapLayers.forEach((mapLayer) => {
+        fetchMapLayer(mapLayer);
     });
 }
 
 /**
   * Fetching map layer
-  *
-  * Trying first to get map layer from
-  * localstorage, if failed - via ajax call
+  * Trying first to get map layer from localstorage, if failed - via ajax call
   */
-function fetchMapLayer(mapType, loadVehicles = false) {
+function fetchMapLayer(mapLayer) {
 
+    // if it's vehicles layer - separate pipeline
+    if (mapLayer === mapLayerVehicles) {
+        fetchVehicles();
+        return;
+    }
+
+    // regular pipeline
     const getGeoMap = new Promise(function(resolve, reject) {
-        let geoJson = JSON.parse(localStorage.getItem(mapType));
+        let geoJson = JSON.parse(localStorage.getItem(mapLayer));
         if(geoJson) {
             resolve(geoJson);
         } else {
-             d3.json('res/' + mapType + '.json')
+             d3.json(`res/${mapLayer}.json`)
                 .then((geoJson) => {
-                    // Caching every map except for "streets".
-                    // It is too big for caching (~10MB)
-                    // TODO: when having BE calculate map sizes in advance
-                    // and avoid manual discarding of streets.json
-                    // TODO: implement main geometry chunks detection
-                    // for initial load of the map and caching friendly
-                    // size
-                    if (mapType !== 'streets') {
-                        localStorage.setItem(mapType, JSON.stringify(geoJson));
+                    // Caching every map except for "streets". It is too big for
+                    // caching (~10MB).
+                    // TODO: When having BE - calculate map sizes in advance and
+                    // avoid manual discarding of streets.json
+                    // TODO: implement main geometry chunks detection for initial
+                    // load of the map and caching friendly size
+                    if (mapLayer !== 'streets') {
+                        localStorage.setItem(mapLayer, JSON.stringify(geoJson));
                     }
                     resolve(geoJson);
                 })
                 // processing failure in json request
-                .catch(() => {
+                .catch((err) => {
+                    throw new Error(err);
                     reject(geoJson);
                 });
         }
     });
 
     // after we got a map from cache or by network
-    // we render it
+    // we save layer and pass for processing
     getGeoMap.then(function(geoJson) {
-        // setting map scale of the svg
-        if (!mapScaleIsSet) {
-            setMapScaleGeoJson(geoJson);
-            mapScaleIsSet = true;
-        }
-        renderMapLayer(geoJson, mapType);
-        if (loadVehicles) {
-            fetchVehicles();
-        }
+        mapsData[mapLayer] = geoJson;
+        processMapLayersQueue();
     }).catch((err) => {
-        console.error(err);
-        // we are rendering vehicles even if some
-        // .json has failed
-        // basically even one layer is enough
-        if (mapScaleIsSet && mapType === mapLastRequiredByVehicles) {
-            fetchVehicles();
-        }
+        throw new Error(err);
+        // processing queue on failed request anyway
+        processMapLayersQueue();
     });
+}
+
+/**
+  * Facilitates passing of loaded simultaneously map layers data into UI
+  */
+function processMapLayersQueue(){
+    const layers = Object.keys(mapsData);
+    const layersLength = layers.length;
+    if (!layersLength) {
+        return;
+    }
+    // map scale must be set first
+    if (mapScaleIsSet) {
+        // if scale is set - we do not care about order any more
+        for (let layer of layers) {
+            renderMapLayer(mapsData[layer], layer);
+            delete mapsData[layer];
+        }
+    } else {
+        // however if scale is not set - we try to set it or it will be triggered
+        // next function call
+        if (layers.indexOf(mapLayerScale) !== -1) {
+            // ok, we have data for scaling svg
+            renderMapLayer(mapsData[mapLayerScale], mapLayerScale);
+            delete mapsData[mapLayerScale];
+            mapScaleIsSet = true;
+            // and let's process all pending map layers into the UI
+        }
+    }
 }
 
 /**
@@ -97,7 +130,8 @@ export function fetchVehicles(routeTag) {
     // TODO: fix looking into UI by saving state
     d3.json(vehiclesLocationFetchURL + (routeTag ? ('&r='+routeTag) : ''))
         .then((json) => {
-            renderMapLayer (jsonToGeoJson(json), vehiclesLayerCssClass);
+            mapsData[mapLayerVehicles] = jsonToGeoJson(json);
+            processMapLayersQueue();
             // long-polling after last rendered result
             countFailedVehicleFetches = 0;
             retrySetTimeout = setTimeout(() => {
@@ -105,8 +139,7 @@ export function fetchVehicles(routeTag) {
             }, updateFrequencyMs);
         })
         .catch((err) => {
-            // dumping error in the console
-            console.error(err);
+            throw new Error(err);
             // long-polling after last failed result
             countFailedVehicleFetches++;
             // increasing fetch wait time to prevent endpoint DDOS and banning
@@ -127,7 +160,7 @@ function jsonToGeoJson (json) {
     const calculateRoutes = Object.keys(transportRoutes).length ? false : true;
     json.vehicle.forEach((vehicle) => {
         // dropping some routes because of bad SF map
-        if (vehicle.routeTag === transportRouteDrop) {
+        if (vehicle.routeTag === vehicleRouteDrop) {
             return;
         }
         geoJson.features.push({
