@@ -11,6 +11,11 @@ svg {
     top: -35px;
     z-index: -1;
 }
+select {
+    font-size: 15px;
+    /* to avoid resizing when getting list of routes */
+    width: 55px;
+}
 g path {
     stroke: #7d8da5;
     fill: #e8e8e8;
@@ -22,4 +27,7 @@ g path {
 }
 .vehicles path {
     fill: #fbc02e;
+}
+.route-selector {
+    font-size: 17px;
 }

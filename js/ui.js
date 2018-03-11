@@ -1,3 +1,5 @@
+import {fetchVehicles} from './transport.js';
+
 const routeSelectEl = document.getElementById('route');
 const vehiclesLayerCssClass = 'vehicles';
 const renderWidth = 750;
@@ -71,8 +73,11 @@ function reflectTransportRoutesInUI (routes) {
         opt.innerHTML = routeId;
         routeSelectEl.appendChild(opt);
     });
-    // TODO: trigger immediate UI change with selecting
+    // triggerring immediate UI change with selecting
     // a route in UI
+    routeSelectEl.addEventListener('change', (event) => {
+        fetchVehicles(event.target.value);
+    });
 }
 
 export {routeSelectEl, vehiclesLayerCssClass, renderMapLayer, setMapScaleGeoJson, reflectTransportRoutesInUI};
