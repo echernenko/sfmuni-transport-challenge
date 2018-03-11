@@ -40,7 +40,7 @@ function fetchMapLayer(mapType, loadVehicles = false) {
         if(geoJson) {
             resolve(geoJson);
         } else {
-             d3.json('geo/' + mapType + '.json')
+             d3.json('res/' + mapType + '.json')
                 .then((geoJson) => {
                     // Caching every map except for "streets".
                     // It is too big for caching (~10MB)
@@ -126,6 +126,10 @@ function jsonToGeoJson (json) {
     };
     const calculateRoutes = Object.keys(transportRoutes).length ? false : true;
     json.vehicle.forEach((vehicle) => {
+        // dropping some routes because of bad SF map
+        if (vehicle.routeTag === transportRouteDrop) {
+            return;
+        }
         geoJson.features.push({
             "type": "Feature",
             "geometry": {
@@ -133,7 +137,7 @@ function jsonToGeoJson (json) {
                  "coordinates": [ vehicle.lon, vehicle.lat ]
              }
         });
-        if (calculateRoutes && vehicle.routeTag !== transportRouteDrop) {
+        if (calculateRoutes) {
             transportRoutes[vehicle.routeTag] = 1;
         }
     });
