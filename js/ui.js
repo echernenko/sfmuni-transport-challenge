@@ -5,6 +5,7 @@
 
 import { mapWidth, mapHeight, mapLayerVehicles } from './config.js';
 import { fetchVehicles } from './transport.js';
+import { getRandomColor } from './utils.js';
 
 // calculated once during scale layer render
 let mapProjection;
@@ -12,6 +13,7 @@ let mapPath;
 let mapScaleGeoJson;
 
 const routeSelectEl = document.getElementById('route');
+const routeCssClassPrefix = 'route-';
 const svg = d3.select('svg')
   .attr('width', mapWidth)
   .attr('height', mapHeight);
@@ -27,12 +29,23 @@ function renderMapLayer(geoJson, mapLayer) {
   if (!mapScaleGeoJson) {
     mapScaleGeoJson = geoJson;
   }
-  // calculating once mapProjection and mapPath
+  // calculating once mapProjection
   if (!mapProjection) {
     mapProjection = d3.geoMercator().fitSize([mapWidth, mapHeight], mapScaleGeoJson);
   }
+  // calculating once mapPath
   if (!mapPath) {
     mapPath = d3.geoPath().projection(mapProjection);
+  }
+
+  // user can select fast many routes - we do not want to render outdated one,
+  // that landed after slow fetch request
+  // TODO: think about streamlining transport layer to fix it properly
+  if (mapLayer === mapLayerVehicles && routeSelectEl.value !== '') {
+    // looking on the route tag in the first object
+    const incorrectRouteArrived = (routeSelectEl.value !== geoJson.features[0].properties.route);
+    // if mismatch with UI select - exiting
+    if (incorrectRouteArrived) { return; }
   }
 
   // is vehicles layer rendered?
@@ -53,7 +66,14 @@ function renderMapLayer(geoJson, mapLayer) {
     .data(geoJson.features)
     .enter()
     .append('path')
-    .attr('d', mapPath);
+    .attr('d', mapPath)
+    .attr('class', function(d){
+      if (mapLayer !== mapLayerVehicles) {
+        return '';
+      }
+      // for vehicles layer we put customized css class to mark routes
+      return `${routeCssClassPrefix}${d.properties.route.toLowerCase()}`;
+    });
 
   // making sure vehicles layer always goes last
   // when adding some other layer as last one
@@ -79,6 +99,18 @@ function reflectVehicleRoutesInUI(routes) {
   routeSelectEl.addEventListener('change', (event) => {
     fetchVehicles(event.target.value);
   });
+  // adding <style> tag with randomly generated colors for vehicles
+  addRouteColorsToCss(routes);
+}
+
+function addRouteColorsToCss(routes) {
+  let routesCssColors = '';
+  Object.keys(routes).forEach((routeId) => {
+    routesCssColors += `.vehicles .${routeCssClassPrefix}${routeId.toLowerCase()} { fill: ${getRandomColor()}; } `;
+  });
+  const style = document.createElement('style');
+  style.innerHTML = routesCssColors;
+  document.body.appendChild(style);
 }
 
 export { renderMapLayer, reflectVehicleRoutesInUI };

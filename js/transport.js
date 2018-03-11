@@ -11,8 +11,8 @@ import {
   mapLayerScale,
   vehiclesLocationFetchURL,
   vehicleRoutesDescriptionFetchURL,
-  vehicleRouteDrop,
 } from './config.js';
+import {jsonToGeoJson} from './utils.js';
 import {
   renderMapLayer,
   reflectVehicleRoutesInUI,
@@ -105,6 +105,11 @@ export function fetchVehicles(routeTag) {
     .then((json) => {
       mapData[mapLayerVehicles] = jsonToGeoJson(json);
       processMapLayersQueue();
+      // should we calculate / get from cache vehicle routes?
+      const calculateRoutes = !Object.keys(vehicleRoutes).length;
+      if (calculateRoutes) {
+        fetchVehicleRoutes(json.vehicle);
+      }
       // long-polling after last rendered result
       countFailedVehicleFetches = 0;
       retrySetTimeout = setTimeout(() => {
@@ -185,35 +190,4 @@ function processMapLayersQueue() {
     delete mapData[mapLayerScale];
     mapScaleIsSet = true;
   }
-}
-
-/**
- * JSON to geoJSON converter
- * @param {json} json A json, that represents map
- */
-function jsonToGeoJson(json) {
-  const geoJson = {
-    type: 'FeatureCollection',
-    features: [],
-  };
-  const calculateRoutes = !Object.keys(vehicleRoutes).length;
-  json.vehicle.forEach((vehicle) => {
-    const routeTag = vehicle.routeTag;
-    // dropping some routes because of bad SF map
-    if (routeTag === vehicleRouteDrop) { return; }
-    geoJson.features.push({
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: [vehicle.lon, vehicle.lat],
-      },
-    });
-  });
-
-  // fetching vehicle routes info passing live data feed
-  if (calculateRoutes) {
-    fetchVehicleRoutes(json.vehicle);
-  }
-
-  return geoJson;
 }

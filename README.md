@@ -19,8 +19,6 @@ run code in modern browser.
 
 ----------
 Backlog:
-- use this endpoint for fetching route names:
-  http://webservices.nextbus.com/service/publicJSONFeed?command=routeList&a=sf-muni
 - make different route buses different color; draw legend in sidebar; animate points moving from A to B;
 - port FE to React (re-hydrate) - basically only routeTag selection control
 
