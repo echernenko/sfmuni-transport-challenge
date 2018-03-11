@@ -13,9 +13,9 @@ const svg = d3.select('svg')
 const svgEl = svg.node();
 
 // calculated once during scale layer render
-let mapProjection,
-  mapPath,
-  mapScaleGeoJson;
+let mapProjection;
+let mapPath;
+let mapScaleGeoJson;
 
 /**
  * Common point for rendering a map layer

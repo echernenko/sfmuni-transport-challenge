@@ -51,9 +51,9 @@ function fetchMapLayer(mapLayer) {
 
   // regular pipeline
   const getGeoMap = new Promise(((resolve, reject) => {
-    const geoJson = JSON.parse(localStorage.getItem(mapLayer));
-    if (geoJson) {
-      resolve(geoJson);
+    const geoJsonCached = JSON.parse(localStorage.getItem(mapLayer));
+    if (geoJsonCached) {
+      resolve(geoJsonCached);
     } else {
       d3.json(`res/${mapLayer}.json`)
         .then((geoJson) => {
@@ -68,53 +68,24 @@ function fetchMapLayer(mapLayer) {
           }
           resolve(geoJson);
         })
-      // processing failure in json request
+        // processing failure in json request
         .catch((err) => {
+          reject();
           throw new Error(err);
-          reject(geoJson);
         });
     }
   }));
 
-    // after we got a map from cache or by network
-    // we save layer and pass for processing
+  // after we got a map from cache or by network
+  // we save layer and pass for processing
   getGeoMap.then((geoJson) => {
     mapsData[mapLayer] = geoJson;
     processMapLayersQueue();
   }).catch((err) => {
-    throw new Error(err);
     // processing queue on failed request anyway
     processMapLayersQueue();
+    throw new Error(err);
   });
-}
-
-/**
- * Facilitates passing of loaded simultaneously map layers data into UI
- */
-function processMapLayersQueue() {
-  const layers = Object.keys(mapsData);
-  const layersLength = layers.length;
-  if (!layersLength) {
-    return;
-  }
-  // map scale must be set first
-  if (mapScaleIsSet) {
-    // if scale is set - we do not care about order any more
-    for (const layer of layers) {
-      renderMapLayer(mapsData[layer], layer);
-      delete mapsData[layer];
-    }
-  } else {
-    // however if scale is not set - we try to set it or it will be triggered
-    // next function call
-    if (layers.indexOf(mapLayerScale) !== -1) {
-      // ok, we have data for scaling svg
-      renderMapLayer(mapsData[mapLayerScale], mapLayerScale);
-      delete mapsData[mapLayerScale];
-      mapScaleIsSet = true;
-      // and let's process all pending map layers into the UI
-    }
-  }
 }
 
 /**
@@ -140,14 +111,41 @@ export function fetchVehicles(routeTag) {
       }, updateFrequencyMs);
     })
     .catch((err) => {
-      throw new Error(err);
       // long-polling after last failed result
       countFailedVehicleFetches++;
       // increasing fetch wait time to prevent endpoint DDOS and banning
       retrySetTimeout = setTimeout(() => {
         fetchVehicles(routeTag);
       }, updateFrequencyMs * countFailedVehicleFetches);
+      throw new Error(err);
     });
+}
+
+/**
+ * Facilitates passing of loaded simultaneously map layers data into UI
+ */
+function processMapLayersQueue() {
+  const layers = Object.keys(mapsData);
+  const layersLength = layers.length;
+  // no layers - exiting
+  if (!layersLength) { return; }
+  // scale is not set and missing in queue
+  if (!mapScaleIsSet && layers.indexOf(mapLayerScale) !== -1) { return; }
+
+  // map scale must be set first
+  if (mapScaleIsSet) {
+    // if scale is set - we do not care about order any more
+    layers.forEach((layer) => {
+      renderMapLayer(mapsData[layer], layer);
+      delete mapsData[layer];
+    });
+  } else {
+    // ok, we have data for scaling svg
+    renderMapLayer(mapsData[mapLayerScale], mapLayerScale);
+    delete mapsData[mapLayerScale];
+    mapScaleIsSet = true;
+    // and let's process all pending map layers into the UI
+  }
 }
 
 /**
