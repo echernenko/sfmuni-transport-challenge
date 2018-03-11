@@ -5,7 +5,7 @@
  * update every 15 seconds
  */
 
-import {fetchAllMaps} from './transport.js';
+import { fetchAllMaps } from './transport.js';
 
 // initialization
 fetchAllMaps();
