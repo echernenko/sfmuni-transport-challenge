@@ -10,17 +10,19 @@ import {
   mapLayerVehicles,
   mapLayerScale,
   vehiclesLocationFetchURL,
+  vehicleRoutesDescriptionFetchURL,
   vehicleRouteDrop,
 } from './config.js';
 import {
   renderMapLayer,
-  reflectTransportRoutesInUI,
+  reflectVehicleRoutesInUI,
 } from './ui.js';
 
 const updateFrequencyMs = 15000;
-// one time calculated transport routes
-const transportRoutes = {};
-const mapsData = {};
+// one time calculated vehicle routes
+let vehicleRoutes = {};
+const vehicleRoutesCacheKey = 'routes';
+const mapData = {};
 // used for increasing re-try time
 let countFailedVehicleFetches = 0;
 // re-try setTimeout id
@@ -31,7 +33,7 @@ let mapScaleIsSet = false;
 /**
  * Fetching all map layers + transportation on top
  */
-export function fetchAllMaps() {
+export function fetchMapAllLayers() {
   mapLayers.forEach((mapLayer) => {
     fetchMapLayer(mapLayer);
   });
@@ -50,7 +52,7 @@ function fetchMapLayer(mapLayer) {
   }
 
   // regular pipeline
-  const getGeoMap = new Promise(((resolve, reject) => {
+  const getGeoMap = new Promise((resolve, reject) => {
     const geoJsonCached = JSON.parse(localStorage.getItem(mapLayer));
     if (geoJsonCached) {
       resolve(geoJsonCached);
@@ -74,12 +76,12 @@ function fetchMapLayer(mapLayer) {
           throw new Error(err);
         });
     }
-  }));
+  });
 
   // after we got a map from cache or by network
   // we save layer and pass for processing
   getGeoMap.then((geoJson) => {
-    mapsData[mapLayer] = geoJson;
+    mapData[mapLayer] = geoJson;
     processMapLayersQueue();
   }).catch((err) => {
     // processing queue on failed request anyway
@@ -99,10 +101,9 @@ export function fetchVehicles(routeTag) {
   if (retrySetTimeout) {
     clearTimeout(retrySetTimeout);
   }
-  // TODO: fix looking into UI by saving state
   d3.json(vehiclesLocationFetchURL + (routeTag ? (`&r=${routeTag}`) : ''))
     .then((json) => {
-      mapsData[mapLayerVehicles] = jsonToGeoJson(json);
+      mapData[mapLayerVehicles] = jsonToGeoJson(json);
       processMapLayersQueue();
       // long-polling after last rendered result
       countFailedVehicleFetches = 0;
@@ -122,29 +123,67 @@ export function fetchVehicles(routeTag) {
 }
 
 /**
+ * Fetching vehicle routes information from public API
+ * and live data feed and passing it to UI for rendering
+ */
+function fetchVehicleRoutes(jsonVehicleLocations) {
+  // first trying cache
+  const jsonCached = JSON.parse(localStorage.getItem(vehicleRoutesCacheKey));
+  if (jsonCached) {
+    vehicleRoutes = jsonCached;
+    reflectVehicleRoutesInUI(vehicleRoutes)
+    return;
+  }
+  // if routes are not cached - filling vehicle route keys at least
+  jsonVehicleLocations.forEach((vehicle) => {
+    vehicleRoutes[vehicle.routeTag] = 1;
+  });
+  // trying to get detailed route descriptions too
+  // (but fail is not critical)
+  d3.json(vehicleRoutesDescriptionFetchURL)
+  .then((json) => {
+    json.route.forEach((route) => {
+      // processing route tags only from live data feed (or cached)
+      if (!vehicleRoutes[route.tag]) { return; }
+      // extending data by adding title
+      vehicleRoutes[route.tag] = route.title;
+    });
+    localStorage.setItem(vehicleRoutesCacheKey, JSON.stringify(vehicleRoutes));
+    // passing control over the data to UI
+    reflectVehicleRoutesInUI(vehicleRoutes);
+  })
+  .catch((err) => {
+    reflectVehicleRoutesInUI(vehicleRoutes);
+    // failed fetch is totally ok as we will show in UI then only route tags
+    // from main feed. No point caching this partial data though
+    throw new Error(err);
+  });
+}
+
+/**
  * Facilitates passing of loaded simultaneously map layers data into UI
  */
 function processMapLayersQueue() {
-  const layers = Object.keys(mapsData);
+  const layers = Object.keys(mapData);
   const layersLength = layers.length;
   // no layers - exiting
   if (!layersLength) { return; }
   // scale is not set and missing in queue
   if (!mapScaleIsSet && layers.indexOf(mapLayerScale) === -1) { return; }
 
-  // map scale must be set first
+  // if scale is set - we do not care about order any more
   if (mapScaleIsSet) {
-    // if scale is set - we do not care about order any more
+    // rendering everything
     layers.forEach((layer) => {
-      renderMapLayer(mapsData[layer], layer);
-      delete mapsData[layer];
+      renderMapLayer(mapData[layer], layer);
+      delete mapData[layer];
     });
   } else {
-    // ok, we have data for scaling svg
-    renderMapLayer(mapsData[mapLayerScale], mapLayerScale);
-    delete mapsData[mapLayerScale];
+    // rendering main scaling layer
+    // (defined in the config.js - neighborhoods.json)
+    renderMapLayer(mapData[mapLayerScale], mapLayerScale);
+    delete mapData[mapLayerScale];
     mapScaleIsSet = true;
-    // and let's process all pending map layers into the UI
   }
 }
 
@@ -157,12 +196,11 @@ function jsonToGeoJson(json) {
     type: 'FeatureCollection',
     features: [],
   };
-  const calculateRoutes = !Object.keys(transportRoutes).length;
+  const calculateRoutes = !Object.keys(vehicleRoutes).length;
   json.vehicle.forEach((vehicle) => {
+    const routeTag = vehicle.routeTag;
     // dropping some routes because of bad SF map
-    if (vehicle.routeTag === vehicleRouteDrop) {
-      return;
-    }
+    if (routeTag === vehicleRouteDrop) { return; }
     geoJson.features.push({
       type: 'Feature',
       geometry: {
@@ -170,13 +208,12 @@ function jsonToGeoJson(json) {
         coordinates: [vehicle.lon, vehicle.lat],
       },
     });
-    if (calculateRoutes) {
-      transportRoutes[vehicle.routeTag] = 1;
-    }
   });
-  // updating UI control once to show routes filter
+
+  // fetching vehicle routes info passing live data feed
   if (calculateRoutes) {
-    reflectTransportRoutesInUI(transportRoutes);
+    fetchVehicleRoutes(json.vehicle);
   }
+
   return geoJson;
 }

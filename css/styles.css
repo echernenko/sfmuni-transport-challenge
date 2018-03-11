@@ -14,7 +14,7 @@ svg {
 select {
     font-size: 15px;
     /* to avoid resizing when getting list of routes */
-    width: 55px;
+    width: 175px;
 }
 g path {
     stroke: #7d8da5;

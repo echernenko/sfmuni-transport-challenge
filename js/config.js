@@ -10,8 +10,10 @@ const mapLayerVehicles = 'vehicles';
 const mapLayers = ['neighborhoods', 'arteries', 'freeways', mapLayerVehicles, 'streets'];
 // map layer, that is used for scaling whole svg
 const mapLayerScale = mapLayers[0];
-// public API URL
+// public API vehicle locations URL
 const vehiclesLocationFetchURL = 'http://webservices.nextbus.com/service/publicJSONFeed?command=vehicleLocations&a=sf-muni';
+// public API vehicle  URL
+const vehicleRoutesDescriptionFetchURL = 'http://webservices.nextbus.com/service/publicJSONFeed?command=routeList&a=sf-muni';
 // route below is ignored due to poor map, fix it in future
 const vehicleRouteDrop = '76X';
 
@@ -22,5 +24,6 @@ export {
   mapLayers,
   mapLayerScale,
   vehiclesLocationFetchURL,
+  vehicleRoutesDescriptionFetchURL,
   vehicleRouteDrop,
 };

@@ -6,16 +6,16 @@
 import { mapWidth, mapHeight, mapLayerVehicles } from './config.js';
 import { fetchVehicles } from './transport.js';
 
+// calculated once during scale layer render
+let mapProjection;
+let mapPath;
+let mapScaleGeoJson;
+
 const routeSelectEl = document.getElementById('route');
 const svg = d3.select('svg')
   .attr('width', mapWidth)
   .attr('height', mapHeight);
 const svgEl = svg.node();
-
-// calculated once during scale layer render
-let mapProjection;
-let mapPath;
-let mapScaleGeoJson;
 
 /**
  * Common point for rendering a map layer
@@ -64,15 +64,15 @@ function renderMapLayer(geoJson, mapLayer) {
 }
 
 /**
- * Rendering transport route options in dropdown of the page
+ * Rendering vehicle route types in dropdown of the page
  * TODO: move to React
  * @param {array} routes A list of vehicle routes
  */
-function reflectTransportRoutesInUI(routes) {
+function reflectVehicleRoutesInUI(routes) {
   Object.keys(routes).forEach((routeId) => {
     const opt = document.createElement('option');
     opt.value = routeId;
-    opt.innerHTML = routeId;
+    opt.innerHTML = (routes[routeId] === 1) ? routeId : routes[routeId];
     routeSelectEl.appendChild(opt);
   });
   // triggerring immediate UI change with selecting a route in UI
@@ -81,4 +81,4 @@ function reflectTransportRoutesInUI(routes) {
   });
 }
 
-export { renderMapLayer, reflectTransportRoutesInUI };
+export { renderMapLayer, reflectVehicleRoutesInUI };
