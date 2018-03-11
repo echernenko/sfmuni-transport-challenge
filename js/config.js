@@ -15,4 +15,12 @@ const vehiclesLocationFetchURL = 'http://webservices.nextbus.com/service/publicJ
 // route below is ignored due to poor map, fix it in future
 const vehicleRouteDrop = '76X';
 
-export { mapWidth, mapHeight, mapLayerVehicles, mapLayers, mapLayerScale, vehiclesLocationFetchURL, vehicleRouteDrop };
+export {
+  mapWidth,
+  mapHeight,
+  mapLayerVehicles,
+  mapLayers,
+  mapLayerScale,
+  vehiclesLocationFetchURL,
+  vehicleRouteDrop,
+};
