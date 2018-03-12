@@ -142,11 +142,10 @@ function appendMapLayer(name, json, renderAttributes) {
  * @param {array} routes A list of vehicle routes
  */
 function reflectVehicleRoutesInUI(routes) {
-
   // passing routes to RouteSelector component
   ReactDOM.render(
-    React.createElement(RouteSelector, { routes: routes }),
-    document.getElementById(containerRouteSelector)
+    React.createElement(RouteSelector, { routes }),
+    document.getElementById(containerRouteSelector),
   );
 
   // adding <style> tag with randomly generated colors for vehicles
@@ -172,12 +171,11 @@ function addRouteColorsToCss(routes) {
   document.body.appendChild(style);
   // passing routeColors to MapLegend component
   ReactDOM.render(
-    React.createElement(MapLegend, { routeColors: routeColors }),
-    document.getElementById(containerMapLegend)
+    React.createElement(MapLegend, { routeColors }),
+    document.getElementById(containerMapLegend),
   );
   // and showing map legend block
   document.getElementById(containerMapLegend).classList.remove('hidden');
-
 }
 
 export { renderMapLayer, reflectVehicleRoutesInUI };

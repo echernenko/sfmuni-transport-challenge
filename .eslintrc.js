@@ -5,6 +5,8 @@ module.exports = {
   },
   "globals": {
     "d3": true,
+    "React": true,
+    "ReactDOM": true,
   },
   "rules": {
     "import/extensions": [ 'always', {ignorePackages: true} ],
