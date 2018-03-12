@@ -25,6 +25,9 @@ g path {
 .streets {
     opacity: 0.7;
 }
+.vehicles-hidden {
+    display: none;
+}
 .vehicles path {
     fill: #fbc02e;
 }
