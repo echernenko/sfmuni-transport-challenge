@@ -13,11 +13,14 @@ export function jsonToGeoJson(json) {
     type: 'FeatureCollection',
     features: [],
   };
-  if (!json.vehicle) {
-    return geoJson;
+  let vehicles = json.vehicle;
+  if (!vehicles) { return geoJson; }
+  // normalizing output to array always
+  if (!Array.isArray(vehicles) && typeof vehicles === 'object') {
+    vehicles = [vehicles];
   }
-  json.vehicle.forEach((vehicle) => {
-    const routeTag = vehicle.routeTag;
+  vehicles.forEach((vehicle) => {
+    const { routeTag } = vehicle;
     // no route tag - unpredictable vehicle - skipping
     if (!routeTag) { return; }
     // dropping some routes because of bad SF map
@@ -31,7 +34,7 @@ export function jsonToGeoJson(json) {
       properties: {
         id: vehicle.id,
         route: vehicle.routeTag,
-      }
+      },
     });
   });
   return geoJson;
@@ -45,7 +48,7 @@ export function getRandomColor() {
   const letters = '0123456789ABCDEF'.split('');
   let color = '#';
   for (let i = 0; i < 6; i++) {
-      color += letters[Math.round(Math.random() * 15)];
+    color += letters[Math.round(Math.random() * 15)];
   }
   return color;
 }

@@ -40,6 +40,9 @@ function renderMapLayer(geoJson, mapLayer) {
     mapPath = d3.geoPath().projection(mapProjection);
   }
 
+  const vehiclesLayer = svg.select(`.${mapLayerVehicles}`);
+  const vehiclesLayerEl = vehiclesLayer.node();
+
   // user can select fast many routes - we do not want to render outdated one,
   // that landed after slow fetch request
   // TODO: think about streamlining transport layer to fix it properly
@@ -50,56 +53,55 @@ function renderMapLayer(geoJson, mapLayer) {
     if (incorrectRouteArrived) { return; }
   }
 
-  // is vehicles layer rendered?
-  // it should be always last one in svg
-  const vehiclesLayer = svg.select(`.${mapLayerVehicles}`).node();
-
   // processing vehicles layer update
-  if (vehiclesLayer && mapLayer === mapLayerVehicles) {
-
+  if (vehiclesLayerEl && mapLayer === mapLayerVehicles) {
     // first appending invisible layer to perform easy reading of target paths
     appendMapLayer(`${mapLayerVehicles}${vehicleInvisibleCssSuffix}`, geoJson, true);
     // getting paths of visible and invisible layers
-    const vehiclesInvisibleEl = svg.select(`.${mapLayerVehicles}${vehicleInvisibleCssSuffix}`).node();
+    const vehiclesInvisible = svg.select(`.${mapLayerVehicles}${vehicleInvisibleCssSuffix}`);
+    const vehiclesInvisibleEl = vehiclesInvisible.node();
     const invisiblePaths = vehiclesInvisibleEl.children;
-    const visiblePaths = vehiclesLayer.children;
+    const visiblePaths = vehiclesLayerEl.children;
 
-    // second emoving vehicles, that are not present in invisible layer
-    for (let path of visiblePaths) {
-      const invisiblePathExists = svg.select(`.${mapLayerVehicles}${vehicleInvisibleCssSuffix} #${path.id}`).node();
+    // second removing vehicles, that are not present in invisible layer
+    Array.from(visiblePaths).forEach((path) => {
+      const invisiblePathExists = vehiclesInvisible.select(`#${path.id}`).node();
       if (!invisiblePathExists) {
-        vehiclesLayer.removeChild(path);
+        // processing removing async
+        setTimeout(() => {
+          vehiclesLayer.selectAll(`#${path.id}`).remove();
+        }, 25);
       }
-    }
+    });
 
     // third - simply moving every point on visible layer to new coordinates
     // if visible layer does not have path - copying it from invisible
-    for (let path of invisiblePaths) {
-      let visiblePath = svg.select(`.${mapLayerVehicles} #${path.id}`);
+    Array.from(invisiblePaths).forEach((path) => {
+      const visiblePath = svg.select(`.${mapLayerVehicles} #${path.id}`);
       if (!visiblePath.node()) {
-          vehiclesLayer.appendChild(path);
+        vehiclesLayerEl.appendChild(path);
       } else {
         visiblePath
           .transition()
           .duration(500)
           .attr('d', path.getAttribute('d'));
       }
-    }
+    });
 
     // destroying invisible layer
-    svgEl.removeChild(vehiclesInvisibleEl);
+    vehiclesInvisible.remove();
 
     // no more work is required at this point
     return;
   }
 
   // appending a layer for the first time
-  appendMapLayer(mapLayer, geoJson, (mapLayer === mapLayerVehicles ? true : false));
+  appendMapLayer(mapLayer, geoJson, (mapLayer === mapLayerVehicles));
 
   // making sure vehicles layer always goes last
-  if (vehiclesLayer && mapLayer !== mapLayerVehicles) {
-    svgEl.removeChild(vehiclesLayer);
-    svgEl.append(vehiclesLayer);
+  if (vehiclesLayerEl && mapLayer !== mapLayerVehicles) {
+    svgEl.removeChild(vehiclesLayerEl);
+    svgEl.append(vehiclesLayerEl);
   }
 }
 
@@ -109,29 +111,29 @@ function renderMapLayer(geoJson, mapLayer) {
  * @param {json} json A data to render the layer
  * @param {boolean} renderAttributes Defining if id and class attr will be rendered
  */
-function appendMapLayer(name, json, renderAttributes){
-   // appending a layer
-   const g = svg.append('g');
-   // setting layer attributes and content
-   g.attr('class', name)
-     .selectAll('path')
-     .data(json.features)
-     .enter()
-     .append('path')
-     .attr('d', mapPath)
-     .attr('class', function(d){
-       if (!renderAttributes) {
-         return null;
-       }
-       // for vehicles layer we put customized css class to mark routes
-       return `${routeCssClassPrefix}${d.properties.route.toLowerCase()}`;
-     })
-     .attr('id', function(d){
-       if (!renderAttributes) {
-         return null;
-       }
-       return `${vehicleCssIdPrefix}${d.properties.id}`;
-     });
+function appendMapLayer(name, json, renderAttributes) {
+  // appending a layer
+  const g = svg.append('g');
+  // setting layer attributes and content
+  g.attr('class', name)
+    .selectAll('path')
+    .data(json.features)
+    .enter()
+    .append('path')
+    .attr('d', mapPath)
+    .attr('class', (d) => {
+      if (!renderAttributes) {
+        return null;
+      }
+      // for vehicles layer we put customized css class to mark routes
+      return `${routeCssClassPrefix}${d.properties.route.toLowerCase()}`;
+    })
+    .attr('id', (d) => {
+      if (!renderAttributes) {
+        return null;
+      }
+      return `${vehicleCssIdPrefix}${d.properties.id}`;
+    });
 }
 
 /**
@@ -149,15 +151,6 @@ function reflectVehicleRoutesInUI(routes) {
   // triggerring immediate UI change with selecting a route in UI
   routeSelectEl.addEventListener('change', (event) => {
     fetchVehicles(event.target.value);
-    // also to avoid extra work with checking nodes - removing all redundant
-    // vehicles from .vehicles layer
-    if (event.target.value) {
-      const redundantVehicles = document.querySelectorAll(`.vehicles path:not(.${routeCssClassPrefix}${event.target.value.toLowerCase()})`);
-      const vehiclesLayerEl = d3.select('.vehicles').node();
-      for (let vehicle of redundantVehicles) {
-        vehiclesLayerEl.removeChild(vehicle);
-      }
-    }
   });
   // adding <style> tag with randomly generated colors for vehicles
   addRouteColorsToCss(routes);

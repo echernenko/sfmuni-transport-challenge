@@ -12,17 +12,16 @@ import {
   vehiclesLocationFetchURL,
   vehicleRoutesDescriptionFetchURL,
 } from './config.js';
-import {jsonToGeoJson} from './utils.js';
+import { jsonToGeoJson } from './utils.js';
 import {
   renderMapLayer,
   reflectVehicleRoutesInUI,
 } from './ui.js';
 
 // should be 15s, but looks like 10s is working ok
-const updateFrequencyMs = 10000;
+const updateFrequencyMs = 5000;
 // one time calculated vehicle routes
-let vehicleRoutes = {};
-const vehicleRoutesCacheKey = 'routes';
+const vehicleRoutes = {};
 const mapData = {};
 // used for increasing re-try time
 let countFailedVehicleFetches = 0;
@@ -74,7 +73,7 @@ function fetchMapLayer(mapLayer) {
         // processing failure in json request
         .catch((err) => {
           reject();
-          throw new Error(err);
+          console.error(err);
         });
     }
   });
@@ -87,7 +86,7 @@ function fetchMapLayer(mapLayer) {
   }).catch((err) => {
     // processing queue on failed request anyway
     processMapLayersQueue();
-    throw new Error(err);
+    console.error(err);
   });
 }
 
@@ -124,46 +123,41 @@ export function fetchVehicles(routeTag) {
       retrySetTimeout = setTimeout(() => {
         fetchVehicles(routeTag);
       }, updateFrequencyMs * countFailedVehicleFetches);
-      throw new Error(err);
+      console.error(err);
     });
 }
 
 /**
  * Fetching vehicle routes information from public API
- * and live data feed and passing it to UI for rendering
+ * @param {json} jsonVehicleLocations A feed with vehicle locations
+ *
+ * Using live data feed first, then querying separate endpoint
+ * No caching is implemented as routes changed dramatically during the day
  */
 function fetchVehicleRoutes(jsonVehicleLocations) {
-  // first trying cache
-  const jsonCached = JSON.parse(localStorage.getItem(vehicleRoutesCacheKey));
-  if (jsonCached) {
-    vehicleRoutes = jsonCached;
-    reflectVehicleRoutesInUI(vehicleRoutes)
-    return;
-  }
-  // if routes are not cached - filling vehicle route keys at least
+  // filling vehicle route keys at least
   jsonVehicleLocations.forEach((vehicle) => {
     vehicleRoutes[vehicle.routeTag] = 1;
   });
   // trying to get detailed route descriptions too
   // (but fail is not critical)
   d3.json(vehicleRoutesDescriptionFetchURL)
-  .then((json) => {
-    json.route.forEach((route) => {
+    .then((json) => {
+      json.route.forEach((route) => {
       // processing route tags only from live data feed (or cached)
-      if (!vehicleRoutes[route.tag]) { return; }
-      // extending data by adding title
-      vehicleRoutes[route.tag] = route.title;
+        if (!vehicleRoutes[route.tag]) { return; }
+        // extending data by adding title
+        vehicleRoutes[route.tag] = route.title;
+      });
+      // passing control over the data to UI
+      reflectVehicleRoutesInUI(vehicleRoutes);
+    })
+    .catch((err) => {
+      reflectVehicleRoutesInUI(vehicleRoutes);
+      // failed fetch is totally ok as we will show in UI then only route tags
+      // from main feed
+      console.error(err);
     });
-    localStorage.setItem(vehicleRoutesCacheKey, JSON.stringify(vehicleRoutes));
-    // passing control over the data to UI
-    reflectVehicleRoutesInUI(vehicleRoutes);
-  })
-  .catch((err) => {
-    reflectVehicleRoutesInUI(vehicleRoutes);
-    // failed fetch is totally ok as we will show in UI then only route tags
-    // from main feed. No point caching this partial data though
-    throw new Error(err);
-  });
 }
 
 /**
