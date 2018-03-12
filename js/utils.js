@@ -13,6 +13,9 @@ export function jsonToGeoJson(json) {
     type: 'FeatureCollection',
     features: [],
   };
+  if (!json.vehicle) {
+    return geoJson;
+  }
   json.vehicle.forEach((vehicle) => {
     const routeTag = vehicle.routeTag;
     // no route tag - unpredictable vehicle - skipping

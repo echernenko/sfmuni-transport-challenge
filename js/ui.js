@@ -170,9 +170,25 @@ function reflectVehicleRoutesInUI(routes) {
  */
 function addRouteColorsToCss(routes) {
   let routesCssColors = '';
+  let routesTableLegend = '<tr>';
+  let counter = 0;
   Object.keys(routes).forEach((routeId) => {
-    routesCssColors += `.vehicles .${routeCssClassPrefix}${routeId.toLowerCase()} { fill: ${getRandomColor()}; } `;
+    counter++;
+    const newColor = getRandomColor();
+    routesCssColors += `.vehicles .${routeCssClassPrefix}${routeId.toLowerCase()} { fill: ${newColor}; } `;
+    routesTableLegend += `
+        <td>
+          <div class="color" style="background: ${newColor}"></div>
+        </td>
+        <td>${routeId}</td>
+    `;
+    if (counter % 2 === 0) {
+      routesTableLegend += '</tr><tr>';
+    }
   });
+  const colorsListEl = document.getElementById('colors-list');
+  colorsListEl.innerHTML = routesTableLegend;
+  document.getElementById('map-legend').classList.remove('hidden');
   const style = document.createElement('style');
   style.innerHTML = routesCssColors;
   document.body.appendChild(style);

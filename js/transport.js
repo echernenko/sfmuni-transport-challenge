@@ -18,7 +18,8 @@ import {
   reflectVehicleRoutesInUI,
 } from './ui.js';
 
-const updateFrequencyMs = 5000;
+// should be 15s, but looks like 10s is working ok
+const updateFrequencyMs = 10000;
 // one time calculated vehicle routes
 let vehicleRoutes = {};
 const vehicleRoutesCacheKey = 'routes';
