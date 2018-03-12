@@ -4,8 +4,8 @@
  */
 
 import { mapWidth, mapHeight, mapLayerVehicles } from './config.js';
-import { fetchVehicles } from './transport.js';
 import { getRandomColor } from './utils.js';
+import { RouteSelector, MapLegend } from './components.js';
 
 // calculated once during scale layer render
 let mapProjection;
@@ -13,6 +13,8 @@ let mapPath;
 let mapScaleGeoJson;
 
 const routeSelectEl = document.getElementById('route');
+const containerRouteSelector = 'react-route-selector';
+const containerMapLegend = 'react-map-legend';
 const routeCssClassPrefix = 'route-';
 const vehicleCssIdPrefix = 'vehicle-';
 const vehicleInvisibleCssSuffix = '-hidden';
@@ -68,9 +70,7 @@ function renderMapLayer(geoJson, mapLayer) {
       const invisiblePathExists = vehiclesInvisible.select(`#${path.id}`).node();
       if (!invisiblePathExists) {
         // processing removing async
-        setTimeout(() => {
-          vehiclesLayer.selectAll(`#${path.id}`).remove();
-        }, 25);
+        vehiclesLayer.selectAll(`#${path.id}`).remove();
       }
     });
 
@@ -142,16 +142,13 @@ function appendMapLayer(name, json, renderAttributes) {
  * @param {array} routes A list of vehicle routes
  */
 function reflectVehicleRoutesInUI(routes) {
-  Object.keys(routes).forEach((routeId) => {
-    const opt = document.createElement('option');
-    opt.value = routeId;
-    opt.innerHTML = (routes[routeId] === 1) ? routeId : routes[routeId];
-    routeSelectEl.appendChild(opt);
-  });
-  // triggerring immediate UI change with selecting a route in UI
-  routeSelectEl.addEventListener('change', (event) => {
-    fetchVehicles(event.target.value);
-  });
+
+  // passing routes to RouteSelector component
+  ReactDOM.render(
+    React.createElement(RouteSelector, { routes: routes }),
+    document.getElementById(containerRouteSelector)
+  );
+
   // adding <style> tag with randomly generated colors for vehicles
   addRouteColorsToCss(routes);
 }
@@ -163,28 +160,24 @@ function reflectVehicleRoutesInUI(routes) {
  */
 function addRouteColorsToCss(routes) {
   let routesCssColors = '';
-  let routesTableLegend = '<tr>';
-  let counter = 0;
+  const routeColors = {};
   Object.keys(routes).forEach((routeId) => {
-    counter++;
     const newColor = getRandomColor();
+    routeColors[routeId] = newColor;
     routesCssColors += `.vehicles .${routeCssClassPrefix}${routeId.toLowerCase()} { fill: ${newColor}; } `;
-    routesTableLegend += `
-        <td>
-          <div class="color" style="background: ${newColor}"></div>
-        </td>
-        <td>${routeId}</td>
-    `;
-    if (counter % 2 === 0) {
-      routesTableLegend += '</tr><tr>';
-    }
   });
-  const colorsListEl = document.getElementById('colors-list');
-  colorsListEl.innerHTML = routesTableLegend;
-  document.getElementById('map-legend').classList.remove('hidden');
+  // adding styles to the DOM
   const style = document.createElement('style');
   style.innerHTML = routesCssColors;
   document.body.appendChild(style);
+  // passing routeColors to MapLegend component
+  ReactDOM.render(
+    React.createElement(MapLegend, { routeColors: routeColors }),
+    document.getElementById(containerMapLegend)
+  );
+  // and showing map legend block
+  document.getElementById(containerMapLegend).classList.remove('hidden');
+
 }
 
 export { renderMapLayer, reflectVehicleRoutesInUI };

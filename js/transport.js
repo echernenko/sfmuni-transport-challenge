@@ -19,7 +19,7 @@ import {
 } from './ui.js';
 
 // should be 15s, but looks like 10s is working ok
-const updateFrequencyMs = 5000;
+const updateFrequencyMs = 10000;
 // one time calculated vehicle routes
 const vehicleRoutes = {};
 const mapData = {};

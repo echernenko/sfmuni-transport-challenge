@@ -9,29 +9,45 @@
 <body>
   <h2>San Francisco Muni Transport Map</h2>
   <div class="svg-container">
-    <div class="route-selector">
-      <label for="route">Select a route to watch:</label>
-      <select id="route">
-        <option value="">all</option>
-      </select>
+    <div id="react-route-selector">
+      <!-- react-route-selector below is inlined as server-side rendered react component -->
+      <!-- we will re-hydrate it later from js -->
+      <div class="route-selector">
+        <label for="route">Select a route to watch:</label>
+        <select id="route">
+          <option value="">all</option>
+        </select>
+      </div>
     </div>
     <svg width="750" height="700"></svg>
   </div>
-  <div id="map-legend" class="map-legend hidden">
+  <div id="react-map-legend" class="map-legend hidden">
+    <!-- react-map-legend below is inlined as server-side rendered react component -->
+    <!-- we will re-hydrate it later from js -->
     <table>
       <thead>
-        <th>color</th>
-        <th>route</th>
-        <th>color</th>
-        <th>route</th>
+        <tr>
+          <th>color</th>
+          <th>route</th>
+          <th>color</th>
+          <th>route</th>
+          <th>color</th>
+          <th>route</th>
+        </tr>
       </thead>
       <tbody id="colors-list">
       </tbody>
     </table>
   </div>
+
+  <!-- scripts - libs -->
   <script src="http://d3js.org/d3.v5.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react@16/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script>
+  <!-- scripts - modules -->
   <script type="module" src="js/config.js"></script>
   <script type="module" src="js/utils.js"></script>
+  <script type="module" src="js/components.js"></script>
   <script type="module" src="js/ui.js"></script>
   <script type="module" src="js/transport.js"></script>
   <script type="module" src="js/app.js"></script>
