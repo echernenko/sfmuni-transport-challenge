@@ -18,13 +18,13 @@ export class RouteSelector extends React.Component {
   render() {
     const { routes } = this.props;
     // defining first option
-    const selectOptions = [React.createElement('option', { value: '' }, 'all')];
+    const selectOptions = [React.createElement('option', { value: '', key: '1' }, 'all')];
 
-    Object.keys(routes).forEach((routeId) => {
+    Object.keys(routes).forEach((routeId, index) => {
       // adding more options
       selectOptions.push(React.createElement(
         'option',
-        { value: routeId, key: Math.random() },
+        { value: routeId, key: `${index+2}` },
         (routes[routeId] === 1) ? routeId : routes[routeId],
       ));
     });
@@ -54,11 +54,11 @@ export class MapLegend extends React.Component {
   // helper to create table row
   createLegendRow(routeColors) {
     let cells = [];
-    routeColors.forEach((cell) => {
+    routeColors.forEach((cell, index) => {
       cells = cells.concat([
-        React.createElement('td', null, React.createElement(
+        React.createElement('td', { key: `cont-${index + 7}` }, null, React.createElement(
           'div',
-          { className: 'color', style: { background: `${cell.color}` } },
+          { className: 'color', key: index + 1, style: { background: `${cell.color}` } },
         )),
         React.createElement('td', null, `${cell.route}`),
       ]);
@@ -88,12 +88,12 @@ export class MapLegend extends React.Component {
         'thead', null,
         React.createElement(
           'tr', null,
-          React.createElement('th', null, 'color'),
-          React.createElement('th', null, 'route'),
-          React.createElement('th', null, 'color'),
-          React.createElement('th', null, 'route'),
-          React.createElement('th', null, 'color'),
-          React.createElement('th', null, 'route'),
+          React.createElement('th', { key: 'cont-1' }, null, 'color'),
+          React.createElement('th', { key: 'cont-2' }, null, 'route'),
+          React.createElement('th', { key: 'cont-3' }, null, 'color'),
+          React.createElement('th', { key: 'cont-4' }, null, 'route'),
+          React.createElement('th', { key: 'cont-5' }, null, 'color'),
+          React.createElement('th', { key: 'cont-6' }, null, 'route'),
         ),
       ),
       React.createElement('tbody', { id: 'colors-list' }, legendRows),
