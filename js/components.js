@@ -24,7 +24,7 @@ export class RouteSelector extends React.Component {
       // adding more options
       selectOptions.push(React.createElement(
         'option',
-        { value: routeId, key: `${index+2}` },
+        { value: routeId, key: `${index + 2}` },
         (routes[routeId] === 1) ? routeId : routes[routeId],
       ));
     });
@@ -52,18 +52,18 @@ export class RouteSelector extends React.Component {
  */
 export class MapLegend extends React.Component {
   // helper to create table row
-  createLegendRow(routeColors) {
+  createLegendRow(routeColors, indexCont) {
     let cells = [];
     routeColors.forEach((cell, index) => {
       cells = cells.concat([
         React.createElement('td', { key: `cont-${index + 7}` }, null, React.createElement(
           'div',
-          { className: 'color', key: index + 1, style: { background: `${cell.color}` } },
+          { className: 'color', style: { background: `${cell.color}` } },
         )),
-        React.createElement('td', null, `${cell.route}`),
+        React.createElement('td', { key: `cont--${index + 1}` }, null, `${cell.route}`),
       ]);
     });
-    return React.createElement('tr', null, cells);
+    return React.createElement('tr', { key: `holder--${indexCont + 1}` }, null, cells);
   }
 
   // rendering a component
@@ -73,13 +73,14 @@ export class MapLegend extends React.Component {
     // defining legend rows
     const legendRows = [];
     // filling in legend rows
+    let counter = 0;
     while (routes.length) {
       const payload = [];
       const arrPortion = routes.splice(0, 3);
       arrPortion.forEach((el) => {
         payload.push({ route: el, color: routeColors[el] });
       });
-      legendRows.push(this.createLegendRow(payload));
+      legendRows.push(this.createLegendRow(payload, ++counter));
     }
 
     return React.createElement(
